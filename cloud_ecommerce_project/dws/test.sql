@@ -418,7 +418,7 @@ group by
 
 
     select * from dwd.dwd_user_order_clean  where user_id=10000;--2105259  
-    select * from dws.dws_user_topic_wide where user_id=10000 ;---188566
+    select * from dws.dws_user_topic_wide;-- where user_id=10000 ;---188566
     select * from dws.dws_user_topic_wide where user_id=1;
     /*
     user_id (??ID)	1
