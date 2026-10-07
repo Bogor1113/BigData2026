@@ -1,0 +1,386 @@
+======================t+1抽取 order_info==================================
+======================datax开始抽取 order_info的分区2026-10-06==============================
+
+DataX (DATAX-OPENSOURCE-3.0), From Alibaba !
+Copyright (C) 2010-2017, Alibaba Group. All Rights Reserved.
+
+
+2026-10-07 08:35:38.276 [main] INFO  MessageSource - JVM TimeZone: GMT+08:00, Locale: zh_CN
+2026-10-07 08:35:38.277 [main] INFO  MessageSource - use Locale: zh_CN timeZone: sun.util.calendar.ZoneInfo[id="GMT+08:00",offset=28800000,dstSavings=0,useDaylight=false,transitions=0,lastRule=null]
+2026-10-07 08:35:38.292 [main] INFO  VMInfo - VMInfo# operatingSystem class => sun.management.OperatingSystemImpl
+2026-10-07 08:35:38.295 [main] INFO  Engine - the machine info  => 
+
+	osInfo:	Oracle Corporation 1.8 25.212-b10
+	jvmInfo:	Linux amd64 5.4.0-216-generic
+	cpu num:	4
+
+	totalPhysicalMemory:	-0.00G
+	freePhysicalMemory:	-0.00G
+	maxFileDescriptorCount:	-1
+	currentOpenFileDescriptorCount:	-1
+
+	GC Names	[PS MarkSweep, PS Scavenge]
+
+	MEMORY_NAME                    | allocation_size                | init_size                      
+	PS Eden Space                  | 256.00MB                       | 256.00MB                       
+	Code Cache                     | 240.00MB                       | 2.44MB                         
+	Compressed Class Space         | 1,024.00MB                     | 0.00MB                         
+	PS Survivor Space              | 42.50MB                        | 42.50MB                        
+	PS Old Gen                     | 683.00MB                       | 683.00MB                       
+	Metaspace                      | -0.00MB                        | 0.00MB                         
+
+
+2026-10-07 08:35:38.311 [main] INFO  Engine - 
+{
+	"content":[
+		{
+			"reader":{
+				"name":"mysqlreader",
+				"parameter":{
+					"connection":[
+						{
+							"jdbcUrl":[
+								"jdbc:mysql://192.168.110.131:3306/cloud_ecommerce?useUnicode=true&characterEncoding=utf-8"
+							],
+							"querySql":[
+								"SELECT * FROM order_info WHERE date(create_time)='2026-10-06' "
+							]
+						}
+					],
+					"password":"*******",
+					"username":"bigdata"
+				}
+			},
+			"writer":{
+				"name":"hdfswriter",
+				"parameter":{
+					"column":[
+						{
+							"name":"order_id",
+							"type":"BIGINT"
+						},
+						{
+							"name":"order_no",
+							"type":"STRING"
+						},
+						{
+							"name":"user_id",
+							"type":"BIGINT"
+						},
+						{
+							"name":"total_amount",
+							"type":"STRING"
+						},
+						{
+							"name":"pay_amount",
+							"type":"STRING"
+						},
+						{
+							"name":"freight_amount",
+							"type":"STRING"
+						},
+						{
+							"name":"discount_amount",
+							"type":"STRING"
+						},
+						{
+							"name":"coupon_id",
+							"type":"BIGINT"
+						},
+						{
+							"name":"order_status",
+							"type":"TINYINT"
+						},
+						{
+							"name":"payment_method",
+							"type":"STRING"
+						},
+						{
+							"name":"payment_time",
+							"type":"STRING"
+						},
+						{
+							"name":"delivery_time",
+							"type":"STRING"
+						},
+						{
+							"name":"receive_time",
+							"type":"STRING"
+						},
+						{
+							"name":"receiver_name",
+							"type":"STRING"
+						},
+						{
+							"name":"receiver_phone",
+							"type":"STRING"
+						},
+						{
+							"name":"receiver_address",
+							"type":"STRING"
+						},
+						{
+							"name":"order_remark",
+							"type":"STRING"
+						},
+						{
+							"name":"create_time",
+							"type":"STRING"
+						},
+						{
+							"name":"update_time",
+							"type":"STRING"
+						}
+					],
+					"defaultFS":"hdfs://192.168.42.101:8020",
+					"fieldDelimiter":"\t",
+					"fileName":"order_info",
+					"fileType":"text",
+					"path":"/hive3/warehouse/ods.db/ods_order_info/dt=2026-10-06",
+					"writeMode":"truncate"
+				}
+			}
+		}
+	],
+	"setting":{
+		"speed":{
+			"channel":1
+		}
+	}
+}
+
+2026-10-07 08:35:38.330 [main] WARN  Engine - prioriy set to 0, because NumberFormatException, the value is: null
+2026-10-07 08:35:38.331 [main] INFO  PerfTrace - PerfTrace traceId=job_-1, isEnable=false, priority=0
+2026-10-07 08:35:38.331 [main] INFO  JobContainer - DataX jobContainer starts job.
+2026-10-07 08:35:38.333 [main] INFO  JobContainer - Set jobId = 0
+2026-10-07 08:35:39.359 [job-0] INFO  OriginalConfPretreatmentUtil - Available jdbcUrl:jdbc:mysql://192.168.110.131:3306/cloud_ecommerce?useUnicode=true&characterEncoding=utf-8&yearIsDateType=false&zeroDateTimeBehavior=convertToNull&tinyInt1isBit=false&rewriteBatchedStatements=true.
+2026-10-07 08:35:40.864 [job-0] INFO  JobContainer - jobContainer starts to do prepare ...
+2026-10-07 08:35:40.865 [job-0] INFO  JobContainer - DataX Reader.Job [mysqlreader] do prepare work .
+2026-10-07 08:35:40.866 [job-0] INFO  JobContainer - DataX Writer.Job [hdfswriter] do prepare work .
+2026-10-07 08:35:41.024 [job-0] INFO  JobContainer - jobContainer starts to do split ...
+2026-10-07 08:35:41.025 [job-0] INFO  JobContainer - Job set Channel-Number to 1 channels.
+2026-10-07 08:35:41.032 [job-0] INFO  JobContainer - DataX Reader.Job [mysqlreader] splits to [1] tasks.
+2026-10-07 08:35:41.033 [job-0] INFO  HdfsWriter$Job - begin do split...
+2026-10-07 08:35:41.038 [job-0] INFO  HdfsWriter$Job - splited write file name:[hdfs://192.168.42.101:8020/hive3/warehouse/ods.db/ods_order_info/dt=2026-10-06__aa97334a_0771_460a_84d8_7693cf0955af/order_info__8d68f941_35fa_434e_a78a_0e9de51dd205]
+2026-10-07 08:35:41.038 [job-0] INFO  HdfsWriter$Job - end do split.
+2026-10-07 08:35:41.038 [job-0] INFO  JobContainer - DataX Writer.Job [hdfswriter] splits to [1] tasks.
+2026-10-07 08:35:41.055 [job-0] INFO  JobContainer - jobContainer starts to do schedule ...
+2026-10-07 08:35:41.059 [job-0] INFO  JobContainer - Scheduler starts [1] taskGroups.
+2026-10-07 08:35:41.061 [job-0] INFO  JobContainer - Running by standalone Mode.
+2026-10-07 08:35:41.072 [taskGroup-0] INFO  TaskGroupContainer - taskGroupId=[0] start [1] channels for [1] tasks.
+2026-10-07 08:35:41.089 [taskGroup-0] INFO  Channel - Channel set byte_speed_limit to -1, No bps activated.
+2026-10-07 08:35:41.089 [taskGroup-0] INFO  Channel - Channel set record_speed_limit to -1, No tps activated.
+2026-10-07 08:35:41.114 [taskGroup-0] INFO  TaskGroupContainer - taskGroup[0] taskId[0] attemptCount[1] is started
+2026-10-07 08:35:41.118 [0-0-0-reader] INFO  CommonRdbmsReader$Task - Begin to read record by Sql: [SELECT * FROM order_info WHERE date(create_time)='2026-10-06' 
+] jdbcUrl:[jdbc:mysql://192.168.110.131:3306/cloud_ecommerce?useUnicode=true&characterEncoding=utf-8&yearIsDateType=false&zeroDateTimeBehavior=convertToNull&tinyInt1isBit=false&rewriteBatchedStatements=true].
+2026-10-07 08:35:41.142 [0-0-0-writer] INFO  HdfsWriter$Task - begin do write...
+2026-10-07 08:35:41.143 [0-0-0-writer] INFO  HdfsWriter$Task - write to file : [hdfs://192.168.42.101:8020/hive3/warehouse/ods.db/ods_order_info/dt=2026-10-06__aa97334a_0771_460a_84d8_7693cf0955af/order_info__8d68f941_35fa_434e_a78a_0e9de51dd205]
+2026-10-07 08:35:43.950 [0-0-0-reader] INFO  CommonRdbmsReader$Task - Finished read record by Sql: [SELECT * FROM order_info WHERE date(create_time)='2026-10-06' 
+] jdbcUrl:[jdbc:mysql://192.168.110.131:3306/cloud_ecommerce?useUnicode=true&characterEncoding=utf-8&yearIsDateType=false&zeroDateTimeBehavior=convertToNull&tinyInt1isBit=false&rewriteBatchedStatements=true].
+2026-10-07 08:35:43.958 [0-0-0-writer] INFO  HdfsWriter$Task - end do write
+2026-10-07 08:35:44.025 [taskGroup-0] INFO  TaskGroupContainer - taskGroup[0] taskId[0] is successed, used[2925]ms
+2026-10-07 08:35:44.025 [taskGroup-0] INFO  TaskGroupContainer - taskGroup[0] completed it's tasks.
+2026-10-07 08:35:51.088 [job-0] INFO  StandAloneJobContainerCommunicator - Total 75078 records, 9663863 bytes | Speed 943.74KB/s, 7507 records/s | Error 0 records, 0 bytes |  All Task WaitWriterTime 0.275s |  All Task WaitReaderTime 1.742s | Percentage 100.00%
+2026-10-07 08:35:51.088 [job-0] INFO  AbstractScheduler - Scheduler accomplished all tasks.
+2026-10-07 08:35:51.088 [job-0] INFO  JobContainer - DataX Writer.Job [hdfswriter] do post work.
+2026-10-07 08:35:51.088 [job-0] INFO  HdfsWriter$Job - start rename file [hdfs://192.168.42.101:8020/hive3/warehouse/ods.db/ods_order_info/dt=2026-10-06__aa97334a_0771_460a_84d8_7693cf0955af/order_info__8d68f941_35fa_434e_a78a_0e9de51dd205] to file [hdfs://192.168.42.101:8020/hive3/warehouse/ods.db/ods_order_info/dt=2026-10-06/order_info__8d68f941_35fa_434e_a78a_0e9de51dd205].
+2026-10-07 08:35:51.092 [job-0] INFO  HdfsWriter$Job - finish rename file [hdfs://192.168.42.101:8020/hive3/warehouse/ods.db/ods_order_info/dt=2026-10-06__aa97334a_0771_460a_84d8_7693cf0955af/order_info__8d68f941_35fa_434e_a78a_0e9de51dd205] to file [hdfs://192.168.42.101:8020/hive3/warehouse/ods.db/ods_order_info/dt=2026-10-06/order_info__8d68f941_35fa_434e_a78a_0e9de51dd205].
+2026-10-07 08:35:51.092 [job-0] INFO  HdfsWriter$Job - start delete tmp dir [hdfs://192.168.42.101:8020/hive3/warehouse/ods.db/ods_order_info/dt=2026-10-06__aa97334a_0771_460a_84d8_7693cf0955af] .
+2026-10-07 08:35:51.095 [job-0] INFO  HdfsWriter$Job - finish delete tmp dir [hdfs://192.168.42.101:8020/hive3/warehouse/ods.db/ods_order_info/dt=2026-10-06__aa97334a_0771_460a_84d8_7693cf0955af] .
+2026-10-07 08:35:51.095 [job-0] INFO  JobContainer - DataX Reader.Job [mysqlreader] do post work.
+2026-10-07 08:35:51.095 [job-0] INFO  JobContainer - DataX jobId [0] completed successfully.
+2026-10-07 08:35:51.096 [job-0] INFO  HookInvoker - No hook invoked, because base dir not exists or is a file: /opt/datax/hook
+2026-10-07 08:35:51.197 [job-0] INFO  JobContainer - 
+	 [total cpu info] => 
+		averageCpu                     | maxDeltaCpu                    | minDeltaCpu                    
+		-1.00%                         | -1.00%                         | -1.00%
+                        
+
+	 [total gc info] => 
+		 NAME                 | totalGCCount       | maxDeltaGCCount    | minDeltaGCCount    | totalGCTime        | maxDeltaGCTime     | minDeltaGCTime     
+		 PS MarkSweep         | 1                  | 1                  | 1                  | 0.030s             | 0.030s             | 0.030s             
+		 PS Scavenge          | 6                  | 6                  | 6                  | 0.077s             | 0.077s             | 0.077s             
+
+2026-10-07 08:35:51.197 [job-0] INFO  JobContainer - PerfTrace not enable!
+2026-10-07 08:35:51.197 [job-0] INFO  StandAloneJobContainerCommunicator - Total 75078 records, 9663863 bytes | Speed 943.74KB/s, 7507 records/s | Error 0 records, 0 bytes |  All Task WaitWriterTime 0.275s |  All Task WaitReaderTime 1.742s | Percentage 100.00%
+2026-10-07 08:35:51.198 [job-0] INFO  JobContainer - 
+任务启动时刻                    : 2026-10-07 08:35:38
+任务结束时刻                    : 2026-10-07 08:35:51
+任务总计耗时                    :                 12s
+任务平均流量                    :          943.74KB/s
+记录写入速度                    :           7507rec/s
+读出记录总数                    :               75078
+读写失败总数                    :                   0
+
+======================修复 order_info 分区======================
+Partitions not in metastore:	ods_order_info:dt=2026-10-06
+Repair: Added partition to metastore ods_order_info:dt=2026-10-06
+======================t+1抽取 order_detail==================================
+======================datax开始抽取 order_detail的分区2026-10-06==============================
+
+DataX (DATAX-OPENSOURCE-3.0), From Alibaba !
+Copyright (C) 2010-2017, Alibaba Group. All Rights Reserved.
+
+
+2026-10-07 08:36:07.420 [main] INFO  MessageSource - JVM TimeZone: GMT+08:00, Locale: zh_CN
+2026-10-07 08:36:07.422 [main] INFO  MessageSource - use Locale: zh_CN timeZone: sun.util.calendar.ZoneInfo[id="GMT+08:00",offset=28800000,dstSavings=0,useDaylight=false,transitions=0,lastRule=null]
+2026-10-07 08:36:07.431 [main] INFO  VMInfo - VMInfo# operatingSystem class => sun.management.OperatingSystemImpl
+2026-10-07 08:36:07.434 [main] INFO  Engine - the machine info  => 
+
+	osInfo:	Oracle Corporation 1.8 25.212-b10
+	jvmInfo:	Linux amd64 5.4.0-216-generic
+	cpu num:	4
+
+	totalPhysicalMemory:	-0.00G
+	freePhysicalMemory:	-0.00G
+	maxFileDescriptorCount:	-1
+	currentOpenFileDescriptorCount:	-1
+
+	GC Names	[PS MarkSweep, PS Scavenge]
+
+	MEMORY_NAME                    | allocation_size                | init_size                      
+	PS Eden Space                  | 256.00MB                       | 256.00MB                       
+	Code Cache                     | 240.00MB                       | 2.44MB                         
+	Compressed Class Space         | 1,024.00MB                     | 0.00MB                         
+	PS Survivor Space              | 42.50MB                        | 42.50MB                        
+	PS Old Gen                     | 683.00MB                       | 683.00MB                       
+	Metaspace                      | -0.00MB                        | 0.00MB                         
+
+
+2026-10-07 08:36:07.446 [main] INFO  Engine - 
+{
+	"content":[
+		{
+			"reader":{
+				"name":"mysqlreader",
+				"parameter":{
+					"connection":[
+						{
+							"jdbcUrl":[
+								"jdbc:mysql://192.168.110.131:3306/cloud_ecommerce?useUnicode=true&characterEncoding=utf-8"
+							],
+							"querySql":[
+								"SELECT * FROM order_detail WHERE date(create_time)='2026-10-06' "
+							]
+						}
+					],
+					"password":"*******",
+					"username":"bigdata"
+				}
+			},
+			"writer":{
+				"name":"hdfswriter",
+				"parameter":{
+					"column":[
+						{
+							"name":"detail_id",
+							"type":"BIGINT"
+						},
+						{
+							"name":"order_id",
+							"type":"BIGINT"
+						},
+						{
+							"name":"product_id",
+							"type":"BIGINT"
+						},
+						{
+							"name":"product_price",
+							"type":"STRING"
+						},
+						{
+							"name":"product_quantity",
+							"type":"INT"
+						},
+						{
+							"name":"total_amount",
+							"type":"STRING"
+						},
+						{
+							"name":"create_time",
+							"type":"STRING"
+						}
+					],
+					"defaultFS":"hdfs://192.168.42.101:8020",
+					"fieldDelimiter":"\t",
+					"fileName":"order_detail",
+					"fileType":"text",
+					"path":"/hive3/warehouse/ods.db/ods_order_detail/dt=2026-10-06",
+					"writeMode":"truncate"
+				}
+			}
+		}
+	],
+	"setting":{
+		"speed":{
+			"channel":1
+		}
+	}
+}
+
+2026-10-07 08:36:07.456 [main] WARN  Engine - prioriy set to 0, because NumberFormatException, the value is: null
+2026-10-07 08:36:07.457 [main] INFO  PerfTrace - PerfTrace traceId=job_-1, isEnable=false, priority=0
+2026-10-07 08:36:07.457 [main] INFO  JobContainer - DataX jobContainer starts job.
+2026-10-07 08:36:07.459 [main] INFO  JobContainer - Set jobId = 0
+2026-10-07 08:36:07.900 [job-0] INFO  OriginalConfPretreatmentUtil - Available jdbcUrl:jdbc:mysql://192.168.110.131:3306/cloud_ecommerce?useUnicode=true&characterEncoding=utf-8&yearIsDateType=false&zeroDateTimeBehavior=convertToNull&tinyInt1isBit=false&rewriteBatchedStatements=true.
+2026-10-07 08:36:08.520 [job-0] INFO  JobContainer - jobContainer starts to do prepare ...
+2026-10-07 08:36:08.521 [job-0] INFO  JobContainer - DataX Reader.Job [mysqlreader] do prepare work .
+2026-10-07 08:36:08.521 [job-0] INFO  JobContainer - DataX Writer.Job [hdfswriter] do prepare work .
+2026-10-07 08:36:08.581 [job-0] INFO  JobContainer - jobContainer starts to do split ...
+2026-10-07 08:36:08.582 [job-0] INFO  JobContainer - Job set Channel-Number to 1 channels.
+2026-10-07 08:36:08.583 [job-0] INFO  JobContainer - DataX Reader.Job [mysqlreader] splits to [1] tasks.
+2026-10-07 08:36:08.584 [job-0] INFO  HdfsWriter$Job - begin do split...
+2026-10-07 08:36:08.586 [job-0] INFO  HdfsWriter$Job - splited write file name:[hdfs://192.168.42.101:8020/hive3/warehouse/ods.db/ods_order_detail/dt=2026-10-06__ccaa04df_f11b_4441_83dc_385c183981d8/order_detail__a67a8519_12e5_45b0_b06c_84c6270b1dfc]
+2026-10-07 08:36:08.586 [job-0] INFO  HdfsWriter$Job - end do split.
+2026-10-07 08:36:08.586 [job-0] INFO  JobContainer - DataX Writer.Job [hdfswriter] splits to [1] tasks.
+2026-10-07 08:36:08.597 [job-0] INFO  JobContainer - jobContainer starts to do schedule ...
+2026-10-07 08:36:08.599 [job-0] INFO  JobContainer - Scheduler starts [1] taskGroups.
+2026-10-07 08:36:08.601 [job-0] INFO  JobContainer - Running by standalone Mode.
+2026-10-07 08:36:08.606 [taskGroup-0] INFO  TaskGroupContainer - taskGroupId=[0] start [1] channels for [1] tasks.
+2026-10-07 08:36:08.610 [taskGroup-0] INFO  Channel - Channel set byte_speed_limit to -1, No bps activated.
+2026-10-07 08:36:08.610 [taskGroup-0] INFO  Channel - Channel set record_speed_limit to -1, No tps activated.
+2026-10-07 08:36:08.618 [taskGroup-0] INFO  TaskGroupContainer - taskGroup[0] taskId[0] attemptCount[1] is started
+2026-10-07 08:36:08.622 [0-0-0-reader] INFO  CommonRdbmsReader$Task - Begin to read record by Sql: [SELECT * FROM order_detail WHERE date(create_time)='2026-10-06' 
+] jdbcUrl:[jdbc:mysql://192.168.110.131:3306/cloud_ecommerce?useUnicode=true&characterEncoding=utf-8&yearIsDateType=false&zeroDateTimeBehavior=convertToNull&tinyInt1isBit=false&rewriteBatchedStatements=true].
+2026-10-07 08:36:08.643 [0-0-0-writer] INFO  HdfsWriter$Task - begin do write...
+2026-10-07 08:36:08.644 [0-0-0-writer] INFO  HdfsWriter$Task - write to file : [hdfs://192.168.42.101:8020/hive3/warehouse/ods.db/ods_order_detail/dt=2026-10-06__ccaa04df_f11b_4441_83dc_385c183981d8/order_detail__a67a8519_12e5_45b0_b06c_84c6270b1dfc]
+2026-10-07 08:36:11.897 [0-0-0-reader] INFO  CommonRdbmsReader$Task - Finished read record by Sql: [SELECT * FROM order_detail WHERE date(create_time)='2026-10-06' 
+] jdbcUrl:[jdbc:mysql://192.168.110.131:3306/cloud_ecommerce?useUnicode=true&characterEncoding=utf-8&yearIsDateType=false&zeroDateTimeBehavior=convertToNull&tinyInt1isBit=false&rewriteBatchedStatements=true].
+2026-10-07 08:36:11.908 [0-0-0-writer] INFO  HdfsWriter$Task - end do write
+2026-10-07 08:36:11.924 [taskGroup-0] INFO  TaskGroupContainer - taskGroup[0] taskId[0] is successed, used[3307]ms
+2026-10-07 08:36:11.924 [taskGroup-0] INFO  TaskGroupContainer - taskGroup[0] completed it's tasks.
+2026-10-07 08:36:18.615 [job-0] INFO  StandAloneJobContainerCommunicator - Total 226525 records, 8699870 bytes | Speed 849.60KB/s, 22652 records/s | Error 0 records, 0 bytes |  All Task WaitWriterTime 0.187s |  All Task WaitReaderTime 2.330s | Percentage 100.00%
+2026-10-07 08:36:18.615 [job-0] INFO  AbstractScheduler - Scheduler accomplished all tasks.
+2026-10-07 08:36:18.616 [job-0] INFO  JobContainer - DataX Writer.Job [hdfswriter] do post work.
+2026-10-07 08:36:18.616 [job-0] INFO  HdfsWriter$Job - start rename file [hdfs://192.168.42.101:8020/hive3/warehouse/ods.db/ods_order_detail/dt=2026-10-06__ccaa04df_f11b_4441_83dc_385c183981d8/order_detail__a67a8519_12e5_45b0_b06c_84c6270b1dfc] to file [hdfs://192.168.42.101:8020/hive3/warehouse/ods.db/ods_order_detail/dt=2026-10-06/order_detail__a67a8519_12e5_45b0_b06c_84c6270b1dfc].
+2026-10-07 08:36:18.620 [job-0] INFO  HdfsWriter$Job - finish rename file [hdfs://192.168.42.101:8020/hive3/warehouse/ods.db/ods_order_detail/dt=2026-10-06__ccaa04df_f11b_4441_83dc_385c183981d8/order_detail__a67a8519_12e5_45b0_b06c_84c6270b1dfc] to file [hdfs://192.168.42.101:8020/hive3/warehouse/ods.db/ods_order_detail/dt=2026-10-06/order_detail__a67a8519_12e5_45b0_b06c_84c6270b1dfc].
+2026-10-07 08:36:18.620 [job-0] INFO  HdfsWriter$Job - start delete tmp dir [hdfs://192.168.42.101:8020/hive3/warehouse/ods.db/ods_order_detail/dt=2026-10-06__ccaa04df_f11b_4441_83dc_385c183981d8] .
+2026-10-07 08:36:18.623 [job-0] INFO  HdfsWriter$Job - finish delete tmp dir [hdfs://192.168.42.101:8020/hive3/warehouse/ods.db/ods_order_detail/dt=2026-10-06__ccaa04df_f11b_4441_83dc_385c183981d8] .
+2026-10-07 08:36:18.623 [job-0] INFO  JobContainer - DataX Reader.Job [mysqlreader] do post work.
+2026-10-07 08:36:18.623 [job-0] INFO  JobContainer - DataX jobId [0] completed successfully.
+2026-10-07 08:36:18.624 [job-0] INFO  HookInvoker - No hook invoked, because base dir not exists or is a file: /opt/datax/hook
+2026-10-07 08:36:18.725 [job-0] INFO  JobContainer - 
+	 [total cpu info] => 
+		averageCpu                     | maxDeltaCpu                    | minDeltaCpu                    
+		-1.00%                         | -1.00%                         | -1.00%
+                        
+
+	 [total gc info] => 
+		 NAME                 | totalGCCount       | maxDeltaGCCount    | minDeltaGCCount    | totalGCTime        | maxDeltaGCTime     | minDeltaGCTime     
+		 PS MarkSweep         | 1                  | 1                  | 1                  | 0.021s             | 0.021s             | 0.021s             
+		 PS Scavenge          | 7                  | 7                  | 7                  | 0.035s             | 0.035s             | 0.035s             
+
+2026-10-07 08:36:18.725 [job-0] INFO  JobContainer - PerfTrace not enable!
+2026-10-07 08:36:18.726 [job-0] INFO  StandAloneJobContainerCommunicator - Total 226525 records, 8699870 bytes | Speed 849.60KB/s, 22652 records/s | Error 0 records, 0 bytes |  All Task WaitWriterTime 0.187s |  All Task WaitReaderTime 2.330s | Percentage 100.00%
+2026-10-07 08:36:18.726 [job-0] INFO  JobContainer - 
+任务启动时刻                    : 2026-10-07 08:36:07
+任务结束时刻                    : 2026-10-07 08:36:18
+任务总计耗时                    :                 11s
+任务平均流量                    :          849.60KB/s
+记录写入速度                    :          22652rec/s
+读出记录总数                    :              226525
+读写失败总数                    :                   0
+
+======================修复 order_detail 分区======================
+Partitions not in metastore:	ods_order_detail:dt=2026-10-06
+Repair: Added partition to metastore ods_order_detail:dt=2026-10-06
