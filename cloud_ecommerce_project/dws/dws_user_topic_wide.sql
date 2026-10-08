@@ -1,481 +1,277 @@
--- 开启 Tez 小文件合并
+-- ============================================================
+-- DWS 层：用户主题宽表（每用户一行，全量覆盖）
+-- 内容：用户维度 + 订单行为指标 + 偏好 + RFM 分层与运营策略
+-- 调度传参：--hiveconf dt=yyyy-MM-dd（数据日期，正常调度为昨天）
+-- ============================================================
+
 set hive.merge.tezfiles = true;
--- 当输出平均文件小于 128MB 时触发合并
 set hive.merge.smallfiles.avgsize = 134217728;
--- 合并后的目标文件大小设为 256MB
 set hive.merge.size.per.task = 268435456;
-create database
-if not exists dws;
-    CREATE table if not exists dws.dws_user_topic_wide
-        (
-            -- ========== 用户维度 ==========
-            user_id          BIGINT COMMENT '用户ID',
-            username         STRING COMMENT '用户名' ,
-            gender           STRING COMMENT '性别'  ,
-            age              INT COMMENT '年龄'     ,
-            phone            STRING COMMENT '手机号' ,
-            city             STRING COMMENT '城市'  ,
-            province         STRING COMMENT '省份'  ,
-            register_date    STRING COMMENT '注册日期',
-            register_channel STRING COMMENT '注册渠道',
-            user_level       STRING COMMENT '用户等级',
-            status           STRING COMMENT '用户状态',
-            -- ========== 订单行为指标 ==========
-            first_order_date       STRING COMMENT '首次下单日期'        ,
-            last_order_date        STRING COMMENT '最近下单日期'        ,
-            first_pay_date         STRING COMMENT '首次支付日期'        ,
-            last_pay_date          STRING COMMENT '最近支付日期'        ,
-            order_count            BIGINT COMMENT '累计订单数'         ,
-            total_order_amount     DECIMAL(20,2) COMMENT '累计订单总金额',
-            pay_order_count        BIGINT COMMENT '累计支付订单数'       ,
-            total_pay_amount       DECIMAL(20,2) COMMENT '累计支付总金额',
-            is_current_order_ct    BIGINT COMMENT '当日下单数'         ,
-            is_current_order_amout DECIMAL(20,2) COMMENT '当日下单金额' ,
-            is_current_pay_ct      BIGINT COMMENT '当日支付数'         ,
-            is_current_pay_amout   DECIMAL(20,2) COMMENT '当日支付金额' ,
-            is_current_avg_price   DECIMAL(20,2) COMMENT '当日客单价'  ,
-            -- =====偏好
-            brand_fav    array<STRING> COMMENT '品牌偏好',
-            category_fav array<STRING> COMMENT '品类偏好',
-            payment_fav  array<string> COMMENT '支付偏好',
-            --  分层，运营策略
-            r                       double,
-            f                       int   ,
-            user_segment            string,
-            user_operation_strategy string
-        )
-    STORED AS ORC;
-    ---采用临时表，本次会话中可以用，但是会话一旦结束，表就没了空间释放回收,分开计算，减轻集群的计算压力
-    -- 用户偏好
-    create TEMPORARY table if not exists tmp_user_fav as
-    with a as
-         (
-             select
-                 user_id
-                 ,
-                 collect_list(concat(payment_method,":",rk)) as pay_fav
-             from
-                 (
-                     select
-                         user_id
-                         ,
-                         payment_method
-                         ,
-                         rank()over
-                             (
-                                 partition by
-                                     user_id
-                                 order by
-                                     count(1) desc
-                             )
-                         as rk
-                     from
-                         dwd.dwd_user_order_clean
-                     group by
-                         user_id
-                         ,
-                         payment_method) a
-             where
-                 rk = 1
-             group by
-                 user_id)
-         --品牌
-         ,
-         b as
-         (
-             select
-                 user_id
-                 ,
-                 collect_list(concat(brand_name,":",rk)) as brand_fav
-             from
-                 (
-                     select
-                         user_id
-                         ,
-                         brand_name
-                         ,
-                         rank()over
-                             (
-                                 partition by
-                                     user_id
-                                 order by
-                                     count(1) desc
-                             )
-                         as rk
-                     from
-                         dwd.dwd_user_order_clean
-                     group by
-                         user_id
-                         ,
-                         brand_name) a
-             where
-                 rk = 1
-             group by
-                 user_id)
-         --类别
-         ,
-         c as
-         (
-             select
-                 user_id
-                 ,
-                 collect_list(concat(category_name,':',rk)) as category_fav
-             from
-                 (
-                     select
-                         user_id
-                         ,
-                         category_name
-                         ,
-                         rank()over
-                             (
-                                 partition by
-                                     user_id
-                                 order by
-                                     count(1) desc
-                             )
-                         as rk
-                     from
-                         dwd.dwd_user_order_clean
-                     group by
-                         user_id
-                         ,
-                         category_name) a
-             where
-                 rk = 1
-             group by
-                 user_id)
+set hive.auto.convert.join = true;
+
+create database if not exists dws;
+
+create table if not exists dws.dws_user_topic_wide
+(
+    -- ========== 用户维度 ==========
+    user_id          BIGINT        COMMENT '用户ID',
+    username         STRING        COMMENT '用户名',
+    gender           STRING        COMMENT '性别',
+    age              INT           COMMENT '年龄',
+    phone            STRING        COMMENT '手机号',
+    city             STRING        COMMENT '城市',
+    province         STRING        COMMENT '省份',
+    register_date    STRING        COMMENT '注册日期',
+    register_channel STRING        COMMENT '注册渠道',
+    user_level       STRING        COMMENT '用户等级',
+    status           STRING        COMMENT '用户状态',
+    -- ========== 订单行为指标 ==========
+    first_order_date       STRING        COMMENT '首次下单日期',
+    last_order_date        STRING        COMMENT '最近下单日期',
+    first_pay_date         STRING        COMMENT '首次支付日期',
+    last_pay_date          STRING        COMMENT '最近支付日期',
+    order_count            BIGINT        COMMENT '累计订单数',
+    total_order_amount     DECIMAL(20,2) COMMENT '累计订单总金额',
+    pay_order_count        BIGINT        COMMENT '累计支付订单数',
+    total_pay_amount       DECIMAL(20,2) COMMENT '累计支付总金额',
+    is_current_order_ct    BIGINT        COMMENT '当日下单数',
+    is_current_order_amount DECIMAL(20,2) COMMENT '当日下单金额',
+    is_current_pay_ct      BIGINT        COMMENT '当日支付数',
+    is_current_pay_amount   DECIMAL(20,2) COMMENT '当日支付金额',
+    is_current_avg_price   DECIMAL(20,2) COMMENT '当日客单价',
+    -- ========== 偏好 ==========
+    brand_fav    ARRAY<STRING> COMMENT '品牌偏好',
+    category_fav ARRAY<STRING> COMMENT '品类偏好',
+    payment_fav  ARRAY<STRING> COMMENT '支付偏好',
+    -- ========== 分层与运营策略 ==========
+    r                       DOUBLE COMMENT 'R值(最近消费距今/数据日期天数)',
+    f                       INT    COMMENT 'F值(消费频次)',
+    user_segment            STRING COMMENT '用户分层',
+    user_operation_strategy STRING COMMENT '运营策略'
+)
+stored as orc
+tblproperties ('orc.compress' = 'SNAPPY');
+
+-- ============================================================
+-- 1. 订单粒度基础表：dwd 只扫这一次，同时把用户维度透传下来
+-- ============================================================
+create temporary table if not exists tmp_order_level as
+select
+    user_id,
+    order_id,
+    max(create_time)                    as create_time,
+    max(payment_time)                   as payment_time,
+    max(order_total_amount)             as order_total_amount,
+    max(order_pay_amount)               as order_pay_amount,
+    max(username)                       as username,
+    max(gender)                         as gender,
+    max(age)                            as age,
+    max(if(phone != '****', phone, '')) as phone,
+    max(city)                           as city,
+    max(province)                       as province,
+    max(register_date)                  as register_date,
+    max(register_channel)               as register_channel,
+    max(user_level)                     as user_level,
+    max(status)                         as status
+from dwd.dwd_user_order_clean
+group by user_id, order_id;
+
+-- ============================================================
+-- 2. 用户维度表（每用户一行）
+-- ============================================================
+create temporary table if not exists tmp_user_dim as
+select
+    user_id,
+    max(username)         as username,
+    max(gender)           as gender,
+    max(age)              as age,
+    max(phone)            as phone,
+    max(city)             as city,
+    max(province)         as province,
+    max(register_date)    as register_date,
+    max(register_channel) as register_channel,
+    max(user_level)       as user_level,
+    max(status)           as status
+from tmp_order_level
+group by user_id;
+
+-- ============================================================
+-- 3. 用户订单行为指标
+-- ============================================================
+create temporary table if not exists tmp_user_metrics as
+select
+    user_id,
+    date(min(create_time))  as first_order_date,
+    date(max(create_time))  as last_order_date,
+    date(min(payment_time)) as first_pay_date,
+    date(max(payment_time)) as last_pay_date,
+    count(order_id)         as order_count,
+    sum(order_total_amount) as total_order_amount,
+    -- 已支付订单数（原写法 payment_time is not null or payment_time != '' 恒真，改为 and）
+    sum(if(payment_time is not null and payment_time != '', 1, 0)) as pay_order_count,
+    sum(order_pay_amount)   as total_pay_amount,
+    -- 当日指标：以数据日期 dt 为准，便于补跑
+    sum(if(substr(create_time,  1, 10) = '${hiveconf:dt}', 1, 0))                  as is_current_order_ct,
+    sum(if(substr(create_time,  1, 10) = '${hiveconf:dt}', order_total_amount, 0)) as is_current_order_amount,
+    sum(if(substr(payment_time, 1, 10) = '${hiveconf:dt}', 1, 0))                  as is_current_pay_ct,
+    sum(if(substr(payment_time, 1, 10) = '${hiveconf:dt}', order_pay_amount, 0))   as is_current_pay_amount,
+    round(
+        sum(if(substr(create_time, 1, 10) = '${hiveconf:dt}', order_total_amount, 0))
+        / nullif(sum(if(substr(create_time, 1, 10) = '${hiveconf:dt}', 1, 0)), 0)
+    , 2) as is_current_avg_price
+from tmp_order_level
+group by user_id;
+
+-- ============================================================
+-- 4. 用户偏好：支付方式 / 品牌 / 品类各自的 Top1
+--    dwd 明细需按维度聚合，因此这里扫 3 次（各维度粒度不同）
+-- ============================================================
+create temporary table if not exists tmp_user_fav as
+with pay_fav as (
     select
-        a.user_id
-        ,
-        a.pay_fav
-        ,
-        b.brand_fav
-        ,
-        c.category_fav
-    from
-        a
-    join
-        b
-    on
-        a.user_id = b.user_id
-    join
-        c
-    on
-        a.user_id = c.user_id;
-    ---计算用户rfm
-    create TEMPORARY table if not exists tmp_user_rfm as
-    with a as
-         (
-             select
-                 u.user_id
-                 ,
-                 u.create_time
-                 ,
-                 u.order_id
-                 ,
-                 u.order_pay_amount
-             from
-                 dwd.dwd_user_order_clean u
-             group by
-                 u.user_id
-                 ,
-                 u.create_time
-                 ,
-                 u.order_id
-                 ,
-                 u.order_pay_amount)
-         --- 计算所有的用户情况是怎么样呢？
-         ,
-         b as
-         (
-             select
-                 user_id
-                 ,
-                 datediff(current_date,max(create_time)) as r
-                 ,
-                 count(1)                                as f
-                 ,
-                 sum(order_pay_amount)                   as m
-             from
-                 a
-             group by
-                 user_id)
-         --所有用户的 二分位情况
-         ,
-         c as
-         (
-             select
-                CAST(PERCENTILE_APPROX(r, 0.5) AS BIGINT) as avg_r,
-                CAST(PERCENTILE_APPROX(f, 0.5) AS BIGINT) as avg_f,
-                CAST(PERCENTILE_APPROX(m, 0.5) AS BIGINT) as avg_m
-            from b)
-    select  /*+ MAPJOIN(c) */
-        b.user_id
-        ,
-        b.r
-        ,
-        b.f
-        ,
-        b.m
-        ,
-        case
-            when
-                r<=c.avg_r
-            and f>=c.avg_f
-            and m>=c.avg_m
-            then '重要价值客户'
-            when
-                r<=c.avg_r
-            and f<c.avg_f
-            and m>=c.avg_m
-            then '重要发展客户'
-            when
-                r>c.avg_r
-            and f>=c.avg_f
-            and m>=c.avg_m
-            then '重要保持客户'
-            when
-                r>c.avg_r
-            and f<c.avg_f
-            and m>=c.avg_m
-            then '重要挽留客户'
-            when
-                r<=c.avg_r
-            and f>=c.avg_f
-            and m<c.avg_m
-            then '一般价值客户'
-            when
-                r<=c.avg_r
-            and f<c.avg_f
-            and m<c.avg_m
-            then '一般发展客户'
-            when
-                r>c.avg_r
-            and f>=c.avg_f
-            and m<c.avg_m
-            then '一般保持客户'
-            when
-                r>c.avg_r
-            and f<c.avg_f
-            and m<c.avg_m
-            then '一般挽留客户'
-            else '其他'
-        end user_segment
-        ,
-        case
-            when
-                r<=c.avg_r
-            and f>=c.avg_f
-            and m>=c.avg_m
-            then '重点维护，VIP 服务'
-            when
-                r<=c.avg_r
-            and f<c.avg_f
-            and m>=c.avg_m
-            then '提升消费频次'
-            when
-                r>c.avg_r
-            and f>=c.avg_f
-            and m>=c.avg_m
-            then '唤回，防止流失'
-            when
-                r>c.avg_r
-            and f<c.avg_f
-            and m>=c.avg_m
-            then '强唤回，优惠刺激'
-            when
-                r<=c.avg_r
-            and f>=c.avg_f
-            and m<c.avg_m
-            then '提升客单价'
-            when
-                r<=c.avg_r
-            and f<c.avg_f
-            and m<c.avg_m
-            then '培养消费习惯'
-            when
-                r>c.avg_r
-            and f>=c.avg_f
-            and m<c.avg_m
-            then '提升客单价 + 唤回'
-            when
-                r>c.avg_r
-            and f<c.avg_f
-            and m<c.avg_m
-            then '低成本触达或放弃'
-            else '其他'
-        end user_operation_strategy
-    from
-        b
-    cross  join
-        c;
-    --- 插入宽表数据
-    with a as
-         (
-             select
-                 u.user_id
-                 ,
-                 u.username
-                 ,
-                 u.gender
-                 ,
-                 u.age
-                 ,
-                 if (u.phone!='****',u.phone,'') as phone
-                 ,
-                 u.city
-                 ,
-                 u.province
-                 ,
-                 u.register_date
-                 ,
-                 u.register_channel
-                 ,
-                 u.user_level
-                 ,
-                 u.status
-                 ,
-                 u.create_time
-                 ,
-                 u.payment_time
-                 ,
-                 u.order_id
-                 ,
-                 u.order_pay_amount
-                 ,
-                 u.order_total_amount
-             from
-                 dwd.dwd_user_order_clean u
-             group by
-                 u.user_id
-                 ,
-                 u.username
-                 ,
-                 u.gender
-                 ,
-                 u.age
-                 ,
-                 if (u.phone!='****',u.phone,'')
-                 ,
-                 u.city
-                 ,
-                 u.province
-                 ,
-                 u.register_date
-                 ,
-                 u.register_channel
-                 ,
-                 u.user_level
-                 ,
-                 u.status
-                 ,
-                 u.create_time
-                 ,
-                 u.payment_time
-                 ,
-                 u.order_id
-                 ,
-                 u.order_pay_amount
-                 ,
-                 u.order_total_amount )
-    insert overwrite
-    table
-        dws.dws_user_topic_wide
+        user_id,
+        collect_list(concat(payment_method, ':', rk)) as pay_fav
+    from (
+        select
+            user_id,
+            payment_method,
+            rank() over (partition by user_id order by count(1) desc) as rk
+        from dwd.dwd_user_order_clean
+        where payment_method is not null and payment_method != ''
+        group by user_id, payment_method
+    ) t
+    where rk = 1
+    group by user_id
+),
+brand_fav as (
     select
-        a.user_id
-        ,
-        username
-        ,
-        gender
-        ,
-        age
-        ,
-        phone
-        ,
-        city
-        ,
-        province
-        ,
-        register_date
-        ,
-        register_channel
-        ,
-        user_level
-        ,
-        status
-        ,
-        date(min(create_time))                                                                                                                          as first_order_date
-        ,
-        date(max(create_time))                                                                                                                          as last_order_date
-        ,
-        date(min(payment_time))                                                                                                                         as first_pay_date
-        ,
-        date(max(payment_time))                                                                                                                         as last_pay_date
-        ,
-        count(order_id)                                                                                                                                 as order_count
-        ,
-        sum(order_total_amount)                                                                                                                         as total_order_amount
-        ,
-        sum(if (payment_time is not null
-        or payment_time!='',1,0))                                                                                                                       as pay_order_count
-        ,
-        sum(order_pay_amount)                                                                                                                           as total_pay_amount
-        ,
-        sum(if (datediff(current_Date,date(create_time))=1,1,0))                                                                                        as is_current_order_ct
-        ,
-        sum(if (datediff(current_Date,date(create_time))=1,order_total_amount,0))                                                                       as is_current_order_amout
-        ,
-        sum(if (datediff(current_Date,date(payment_time))=1,1,0))                                                                                       as is_current_pay_ct
-        ,
-        sum(if (datediff(current_Date,date(payment_time))=1,order_pay_amount,0))                                                                        as is_current_pay_amout
-        ,
-        round( sum(if (datediff(current_Date,date(create_time))=1,order_total_amount,0)) /
-         sum(if (datediff(current_Date,date(create_time))=1,1,0)) ,2) as is_current_avg_price
-        ,
-        max(brand_fav )                                                                                                                                 as brand_fav
-        ,
-        max(category_fav)                                                                                                                               as category_fav
-        ,
-        max(pay_fav )                                                                                                                               as payment_fav
-        ,
-        --  分层，运营策略
-        max(r )                                                                                                                                         as r
-        ,
-        max(f)                                                                                                                                          as f
-        ,
-        max(user_segment)                                                                                                                               as user_segment
-        ,
-        max(user_operation_strategy )                                                                                                                   as user_operation_strategy
-    from
-        a
-    left join
-        tmp_user_fav f
-    on
-        a.user_id=f.user_id
-    left join
-        tmp_user_rfm r
-    on
-        a.user_id=r.user_id
-    group by
-        a.user_id
-        ,
-        username
-        ,
-        gender
-        ,
-        age
-        ,
-        phone
-        ,
-        city
-        ,
-        province
-        ,
-        register_date
-        ,
-        register_channel
-        ,
-        user_level
-        ,
-        status ;
+        user_id,
+        collect_list(concat(brand_name, ':', rk)) as brand_fav
+    from (
+        select
+            user_id,
+            brand_name,
+            rank() over (partition by user_id order by count(1) desc) as rk
+        from dwd.dwd_user_order_clean
+        where brand_name is not null and brand_name != ''
+        group by user_id, brand_name
+    ) t
+    where rk = 1
+    group by user_id
+),
+category_fav as (
+    select
+        user_id,
+        collect_list(concat(category_name, ':', rk)) as category_fav
+    from (
+        select
+            user_id,
+            category_name,
+            rank() over (partition by user_id order by count(1) desc) as rk
+        from dwd.dwd_user_order_clean
+        where category_name is not null and category_name != ''
+        group by user_id, category_name
+    ) t
+    where rk = 1
+    group by user_id
+)
+-- 原实现三个维度用 inner join，缺少任一维度的用户会整行丢失，改为 full join
+select
+    coalesce(p.user_id, b.user_id, c.user_id) as user_id,
+    p.pay_fav,
+    b.brand_fav,
+    c.category_fav
+from pay_fav p
+full join brand_fav b   on p.user_id = b.user_id
+full join category_fav c on coalesce(p.user_id, b.user_id) = c.user_id;
+
+-- ============================================================
+-- 5. RFM：按全体用户中位数二分，划分 8 类客户
+-- ============================================================
+create temporary table if not exists tmp_user_rfm as
+with b as (
+    select
+        user_id,
+        datediff('${hiveconf:dt}', max(create_time)) as r,
+        count(1)                                     as f,
+        sum(order_pay_amount)                        as m
+    from tmp_order_level
+    group by user_id
+),
+c as (
+    select
+        cast(percentile_approx(r, 0.5) as bigint)        as avg_r,
+        cast(percentile_approx(f, 0.5) as bigint)        as avg_f,
+        -- 金额中位数不能转 bigint，会丢掉小数部分
+        cast(percentile_approx(m, 0.5) as decimal(20,2)) as avg_m
+    from b
+)
+select /*+ MAPJOIN(c) */
+    b.user_id,
+    b.r,
+    b.f,
+    case
+        when r <= c.avg_r and f >= c.avg_f and m >= c.avg_m then '重要价值客户'
+        when r <= c.avg_r and f <  c.avg_f and m >= c.avg_m then '重要发展客户'
+        when r >  c.avg_r and f >= c.avg_f and m >= c.avg_m then '重要保持客户'
+        when r >  c.avg_r and f <  c.avg_f and m >= c.avg_m then '重要挽留客户'
+        when r <= c.avg_r and f >= c.avg_f and m <  c.avg_m then '一般价值客户'
+        when r <= c.avg_r and f <  c.avg_f and m <  c.avg_m then '一般发展客户'
+        when r >  c.avg_r and f >= c.avg_f and m <  c.avg_m then '一般保持客户'
+        when r >  c.avg_r and f <  c.avg_f and m <  c.avg_m then '一般挽留客户'
+        else '其他'
+    end as user_segment,
+    case
+        when r <= c.avg_r and f >= c.avg_f and m >= c.avg_m then '重点维护，VIP 服务'
+        when r <= c.avg_r and f <  c.avg_f and m >= c.avg_m then '提升消费频次'
+        when r >  c.avg_r and f >= c.avg_f and m >= c.avg_m then '唤回，防止流失'
+        when r >  c.avg_r and f <  c.avg_f and m >= c.avg_m then '强唤回，优惠刺激'
+        when r <= c.avg_r and f >= c.avg_f and m <  c.avg_m then '提升客单价'
+        when r <= c.avg_r and f <  c.avg_f and m <  c.avg_m then '培养消费习惯'
+        when r >  c.avg_r and f >= c.avg_f and m <  c.avg_m then '提升客单价 + 唤回'
+        when r >  c.avg_r and f <  c.avg_f and m <  c.avg_m then '低成本触达或放弃'
+        else '其他'
+    end as user_operation_strategy
+from b
+cross join c;
+
+-- ============================================================
+-- 6. 合并落宽表
+-- ============================================================
+insert overwrite table dws.dws_user_topic_wide
+select
+    d.user_id,
+    d.username,
+    d.gender,
+    d.age,
+    d.phone,
+    d.city,
+    d.province,
+    d.register_date,
+    d.register_channel,
+    d.user_level,
+    d.status,
+    m.first_order_date,
+    m.last_order_date,
+    m.first_pay_date,
+    m.last_pay_date,
+    m.order_count,
+    m.total_order_amount,
+    m.pay_order_count,
+    m.total_pay_amount,
+    m.is_current_order_ct,
+    m.is_current_order_amount,
+    m.is_current_pay_ct,
+    m.is_current_pay_amount,
+    m.is_current_avg_price,
+    fav.brand_fav,
+    fav.category_fav,
+    fav.pay_fav,
+    rfm.r,
+    rfm.f,
+    rfm.user_segment,
+    rfm.user_operation_strategy
+from tmp_user_dim d
+left join tmp_user_metrics m   on d.user_id = m.user_id
+left join tmp_user_fav     fav on d.user_id = fav.user_id
+left join tmp_user_rfm     rfm on d.user_id = rfm.user_id;

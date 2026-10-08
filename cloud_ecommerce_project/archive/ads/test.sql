@@ -1,0 +1,1 @@
+select * from ads.ads_user_daily_report;
